@@ -1,0 +1,22 @@
+[
+  {
+    "Id": 1,
+    "Username": "string",
+    "PasswordHash": "$2a$11$P2CFpI5ScKB.noh41jeX5utgWbZK/RWE9QYhQvd/OI8MGvJvnWW3C",
+    "Height": 0,
+    "Weight": 0,
+    "Age": 0,
+    "Goal": "string",
+    "ActivityLevel": "string"
+  },
+  {
+    "Id": 2,
+    "Username": "string1",
+    "PasswordHash": "$2a$11$DgfHxTjLBilTbGTvqp3Kzu.X3UX49vu5Lj9Hp24ejO/xFu8HVv4qO",
+    "Height": 0,
+    "Weight": 0,
+    "Age": 0,
+    "Goal": "string",
+    "ActivityLevel": "string"
+  }
+]

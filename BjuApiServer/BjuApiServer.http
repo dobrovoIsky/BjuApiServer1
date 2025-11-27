@@ -1,0 +1,6 @@
+@BjuApiServer_HostAddress = http://localhost:5169
+
+GET {{BjuApiServer_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
