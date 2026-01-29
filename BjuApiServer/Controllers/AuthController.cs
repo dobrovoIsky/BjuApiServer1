@@ -10,10 +10,9 @@ namespace BjuApiServer.Controllers
     [Route("api/[controller]")]
     public class AuthController : ControllerBase
     {
-        private readonly AppDbContext _context; // Використовуємо контекст БД
+        private readonly AppDbContext _context;
         private readonly ILogger<AuthController> _logger;
 
-        // Інжектуємо AppDbContext замість JsonDbService
         public AuthController(AppDbContext context, ILogger<AuthController> logger)
         {
             _context = context;
@@ -23,11 +22,17 @@ namespace BjuApiServer.Controllers
         [HttpPost("register")]
         public async Task<IActionResult> Register([FromBody] UserRegDTO userDto)
         {
-            // ... (валідація вхідних даних залишається без змін)
+            _logger.LogInformation("Register attempt for user: {Username}", userDto.Username);
 
-            // Пошук користувача тепер відбувається в базі даних
+            if (string.IsNullOrWhiteSpace(userDto.Username) || string.IsNullOrWhiteSpace(userDto.PasswordHash))
+            {
+                _logger.LogWarning("Registration failed: missing username or password");
+                return BadRequest("Username and password are required.");
+            }
+
             if (await _context.Users.AnyAsync(u => u.Username == userDto.Username))
             {
+                _logger.LogWarning("Registration failed: user {Username} already exists", userDto.Username);
                 return BadRequest("Користувач з таким логіном вже існує.");
             }
 
@@ -41,10 +46,11 @@ namespace BjuApiServer.Controllers
                 Goal = userDto.Goal,
                 ActivityLevel = userDto.ActivityLevel,
                 Theme = "light",
-                Language = "uk"
+                Language = "uk",
+                Gender = userDto.Gender,
+                AvatarId = 1
             };
 
-            // Додавання та збереження користувача в базі даних
             await _context.Users.AddAsync(user);
             await _context.SaveChangesAsync();
 
@@ -57,18 +63,56 @@ namespace BjuApiServer.Controllers
         {
             _logger.LogInformation("Login attempt for user: {Username}", loginDto.Username);
 
-            // Пошук користувача для входу також відбувається в базі даних
             var user = await _context.Users.FirstOrDefaultAsync(u => u.Username == loginDto.Username);
 
-            // Перевірка хешу пароля
-            if (user == null || !BCrypt.Net.BCrypt.Verify(loginDto.PasswordHash, user.PasswordHash))
+            if (user == null)
             {
-                _logger.LogWarning("Login failed for user: {Username}. Invalid credentials.", loginDto.Username);
+                _logger.LogWarning("Login failed: user {Username} not found", loginDto.Username);
                 return Unauthorized("Неправильний логін або пароль.");
             }
 
-            _logger.LogInformation("User {Username} logged in successfully.", user.Username);
+            _logger.LogInformation("User found, verifying password for {Username}", user.Username);
+
+            // Спробуємо верифікувати хеш
+            bool isPasswordValid = BCrypt.Net.BCrypt.Verify(loginDto.PasswordHash, user.PasswordHash);
+
+            if (!isPasswordValid)
+            {
+                _logger.LogWarning("Login failed: invalid password for user {Username}", user.Username);
+                return Unauthorized("Неправильний логін або пароль.");
+            }
+
+            _logger.LogInformation("User {Username} logged in successfully", user.Username);
             return Ok(new { message = "Login successful", userId = user.Id });
+        }
+
+        [HttpPost("create-test-user")]
+        public async Task<IActionResult> CreateTestUser()
+        {
+            if (await _context.Users.AnyAsync(u => u.Username == "testuser"))
+            {
+                return Ok("Test user already exists.");
+            }
+
+            var user = new User
+            {
+                Username = "testuser",
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword("testpass"),
+                Height = 170,
+                Weight = 70,
+                Age = 25,
+                Goal = "maintain weight",
+                ActivityLevel = "moderately active",
+                Theme = "light",
+                Language = "uk",
+                Gender = "male",
+                AvatarId = 1
+            };
+
+            await _context.Users.AddAsync(user);
+            await _context.SaveChangesAsync();
+
+            return Ok("Test user created. Username: testuser, Password: testpass");
         }
     }
 }

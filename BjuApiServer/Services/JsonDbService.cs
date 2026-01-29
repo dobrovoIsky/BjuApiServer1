@@ -1,126 +1,68 @@
-﻿/*using System.Text.Json;
-using BjuApiServer.DTO;
-using BjuApiServer.Models;
+﻿using BjuApiServer.Models;
+using System.Text.Json;
 
-namespace BjuApiServer.Services;
-
-public class JsonDbService
+namespace BjuApiServer.Services
 {
-    private readonly string _filePath;
-    private readonly ILogger<JsonDbService> _logger;
-
-    public JsonDbService(IWebHostEnvironment env, ILogger<JsonDbService> logger)
+    public class JsonDbService
     {
-        _filePath = Path.Combine(env.ContentRootPath, "wwwroot", "users.json");
-        _logger = logger;
-    }
+        private readonly string _filePath = "users.json";
+        private List<User> _users = new();
 
-    private async Task<List<User>> ReadUsersAsync()
-    {
-        if (!File.Exists(_filePath))
+        public JsonDbService()
         {
-            return new List<User>();
-        }
-        try
-        {
-            var json = await File.ReadAllTextAsync(_filePath);
-            return JsonSerializer.Deserialize<List<User>>(json) ?? new List<User>();
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Could not read or deserialize users.json");
-            return new List<User>();
-        }
-    }
-
-    private async Task WriteUsersAsync(List<User> users)
-    {
-        var options = new JsonSerializerOptions { WriteIndented = true };
-        var json = JsonSerializer.Serialize(users, options);
-        var directory = Path.GetDirectoryName(_filePath);
-        if (directory != null && !Directory.Exists(directory))
-        {
-            Directory.CreateDirectory(directory);
-        }
-        await File.WriteAllTextAsync(_filePath, json);
-    }
-
-    public async Task<(bool Success, string Error, User? User)> RegisterUserAsync(UserRegDTO newUserDto)
-    {
-        var users = await ReadUsersAsync();
-        if (users.Any(u => string.Equals(u.Username, newUserDto.Username, StringComparison.OrdinalIgnoreCase)))
-        {
-            return (false, "Username already exists.", null);
+            LoadUsers();
         }
 
-        var user = new User
+        private void LoadUsers()
         {
-            Username = newUserDto.Username,
-            PasswordHash = newUserDto.PasswordHash,
-            Height = newUserDto.Height,
-            Weight = newUserDto.Weight,
-            Age = newUserDto.Age,
-            Goal = newUserDto.Goal,
-            ActivityLevel = newUserDto.ActivityLevel,
-            // Встановлюємо значення за замовчуванням при реєстрації
-            Theme = "light",
-            Language = "uk"
-        };
-
-        user.Id = users.Any() ? users.Max(u => u.Id) + 1 : 1;
-        users.Add(user);
-        await WriteUsersAsync(users);
-        return (true, string.Empty, user);
-    }
-
-    public async Task<User?> GetUserByIdAsync(int id)
-    {
-        var users = await ReadUsersAsync();
-        return users.FirstOrDefault(u => u.Id == id);
-    }
-
-    public async Task<User?> GetUserByUsernameAsync(string username)
-    {
-        var users = await ReadUsersAsync();
-        return users.FirstOrDefault(u => string.Equals(u.Username, username, StringComparison.OrdinalIgnoreCase));
-    }
-
-    public async Task<User?> UpdateUserAsync(int id, UpdateUserDto updateUserDto)
-    {
-        var users = await ReadUsersAsync();
-        var userToUpdate = users.FirstOrDefault(u => u.Id == id);
-
-        if (userToUpdate == null)
-        {
-            return null; // Користувача не знайдено
+            if (File.Exists(_filePath))
+            {
+                var json = File.ReadAllText(_filePath);
+                _users = JsonSerializer.Deserialize<List<User>>(json) ?? new List<User>();
+            }
         }
 
-        // Оновлюємо поля
-        userToUpdate.Height = updateUserDto.Height;
-        userToUpdate.Weight = updateUserDto.Weight;
-        userToUpdate.Age = updateUserDto.Age;
-        userToUpdate.Goal = updateUserDto.Goal;
-        userToUpdate.ActivityLevel = updateUserDto.ActivityLevel;
-
-        await WriteUsersAsync(users);
-        return userToUpdate;
-    }
-
-    // Новий метод для оновлення налаштувань
-    public async Task<User?> UpdateUserSettingsAsync(int id, SettingsDto settingsDto)
-    {
-        var users = await ReadUsersAsync();
-        var userToUpdate = users.FirstOrDefault(u => u.Id == id);
-
-        if (userToUpdate == null)
+        private void SaveUsers()
         {
-            return null;
+            var json = JsonSerializer.Serialize(_users);
+            File.WriteAllText(_filePath, json);
         }
 
-        userToUpdate.Theme = settingsDto.Theme ?? userToUpdate.Theme;
-        userToUpdate.Language = settingsDto.Language ?? userToUpdate.Language;
+        public User? GetUserByUsername(string username)
+        {
+            return _users.FirstOrDefault(u => u.Username == username);
+        }
 
-        await WriteUsersAsync(users);
-        return userToUpdate;
+        public User? GetUserById(int id)
+        {
+            return _users.FirstOrDefault(u => u.Id == id);
+        }
+
+        public int GetNextUserId()
+        {
+            return _users.Any() ? _users.Max(u => u.Id) + 1 : 1;
+        }
+
+        public void AddUser(User user)
+        {
+            _users.Add(user);
+            SaveUsers();
+        }
+
+        public void UpdateUser(User user)
+        {
+            var existing = _users.FirstOrDefault(u => u.Id == user.Id);
+            if (existing != null)
+            {
+                _users.Remove(existing);
+                _users.Add(user);
+                SaveUsers();
+            }
+        }
+
+        public List<User> GetAllUsers()
+        {
+            return _users;
+        }
     }
-}*/
+}

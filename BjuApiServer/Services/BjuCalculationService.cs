@@ -6,82 +6,62 @@ namespace BjuApiServer.Services
     {
         public BjuResult Calculate(User user)
         {
-            // ЗАХИСТ: Якщо даних немає, ставимо дефолтні значення, щоб сервер не падав
-            double weight = user.Weight > 0 ? user.Weight : 70;
-            double height = user.Height > 0 ? user.Height : 170;
-            int age = user.Age > 0 ? user.Age : 25;
-            string activity = !string.IsNullOrEmpty(user.ActivityLevel) ? user.ActivityLevel : "sedentary";
-            string goal = !string.IsNullOrEmpty(user.Goal) ? user.Goal : "maintain weight";
-
-            // Розрахунок BMR (Mifflin-St Jeor)
-            double bmr = 10 * weight + 6.25 * height - 5 * age + 5;
-
-            // TDEE
-            double tdee = bmr * GetActivityMultiplier(activity);
-
-            // Goal correction
-            double targetCalories = tdee + GetGoalModifier(goal);
-
-            // Macros
-            double proteins, fats, carbs;
-
-            switch (goal.ToLower())
+            // Розрахунок базового метаболізму (BMR) за формулою Mifflin-St Jeor
+            double bmr;
+            if (user.Gender.ToLower() == "male")
             {
-                case "gain muscle":
-                case "набір маси":
-                    proteins = (targetCalories * 0.30) / 4;
-                    fats = (targetCalories * 0.30) / 9;
-                    carbs = (targetCalories * 0.40) / 4;
-                    break;
-
-                case "lose weight":
-                case "схуднення":
-                    proteins = (targetCalories * 0.40) / 4;
-                    fats = (targetCalories * 0.30) / 9;
-                    carbs = (targetCalories * 0.30) / 4;
-                    break;
-
-                case "maintain weight":
-                case "підтримка ваги":
-                default:
-                    proteins = (targetCalories * 0.25) / 4;
-                    fats = (targetCalories * 0.30) / 9;
-                    carbs = (targetCalories * 0.45) / 4;
-                    break;
+                bmr = 10 * user.Weight + 6.25 * user.Height - 5 * user.Age + 5;
             }
+            else
+            {
+                bmr = 10 * user.Weight + 6.25 * user.Height - 5 * user.Age - 161;
+            }
+
+            // Коефіцієнт активності
+            double activityMultiplier = user.ActivityLevel.ToLower() switch
+            {
+                "sedentary" or "малорухливий" => 1.2,
+                "lightly active" or "легка активність" => 1.375,
+                "moderately active" or "помірна активність" => 1.55,
+                "very active" or "дуже активний" => 1.725,
+                _ => 1.2
+            };
+
+            double tdee = bmr * activityMultiplier;
+
+            // Коефіцієнт для цілі (Goal)
+            double goalMultiplier;
+            string goal = user.Goal.ToLower();
+            if (goal.Contains("lose") || goal.Contains("зниження") || goal.Contains("схуднути") || goal.Contains("схуднення"))
+            {
+                goalMultiplier = 0.8; // Дефіцит для схуднення
+            }
+            else if (goal.Contains("maintain") || goal.Contains("підтримка") || goal.Contains("підтримати") || goal.Contains("ваги"))
+            {
+                goalMultiplier = 1.0; // Підтримка
+            }
+            else if (goal.Contains("gain") || goal.Contains("набір") || goal.Contains("м'яз") || goal.Contains("маси"))
+            {
+                goalMultiplier = 1.2; // Надлишок для набору
+            }
+            else
+            {
+                goalMultiplier = 1.0; // За замовчуванням підтримка
+            }
+
+            double dailyCalories = tdee * goalMultiplier;
+
+            // Розподіл БЖУ (приблизно: 30% білки, 50% вуглеводи, 20% жири)
+            double proteinsGrams = dailyCalories * 0.3 / 4; // 4 кал на грам білка
+            double carbsGrams = dailyCalories * 0.5 / 4;    // 4 кал на грам вуглеводів
+            double fatsGrams = dailyCalories * 0.2 / 9;     // 9 кал на грам жиру
 
             return new BjuResult
             {
-                Calories = Math.Round(targetCalories),
-                Proteins = Math.Round(proteins),
-                Fats = Math.Round(fats),
-                Carbs = Math.Round(carbs)
-            };
-        }
-
-        private double GetActivityMultiplier(string activityLevel)
-        {
-            if (string.IsNullOrEmpty(activityLevel)) return 1.2;
-
-            return activityLevel.ToLower() switch
-            {
-                "sedentary" or "сидячий" => 1.2,
-                "lightly active" or "легка активність" => 1.375,
-                "moderately active" or "помірна активність" => 1.55,
-                "very active" or "висока активність" => 1.725,
-                _ => 1.2
-            };
-        }
-
-        private int GetGoalModifier(string goal)
-        {
-            if (string.IsNullOrEmpty(goal)) return 0;
-
-            return goal.ToLower() switch
-            {
-                "gain muscle" or "набір маси" => 300,
-                "lose weight" or "схуднення" => -300,
-                _ => 0
+                Calories = dailyCalories,
+                Proteins = proteinsGrams,
+                Carbs = carbsGrams,
+                Fats = fatsGrams
             };
         }
     }
