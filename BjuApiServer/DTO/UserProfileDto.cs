@@ -13,5 +13,6 @@ namespace BjuApiServer.DTO
         public string Goal { get; set; } = string.Empty;
         public string ActivityLevel { get; set; } = string.Empty;
         public BjuResult CalculatedBju { get; set; }
+        public int AvatarId { get; set; } = 1; // Нове поле для аватара
     }
 }

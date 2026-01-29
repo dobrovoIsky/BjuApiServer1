@@ -6,42 +6,47 @@ namespace BjuApiServer.Services
     {
         public BjuResult Calculate(User user)
         {
-            // Розрахунок базового метаболізму (BMR) за формулою Міффліна-Сан-Жеора
-            // Для простоти припустимо, що користувач - чоловік. У реальному додатку потрібно додати поле "стать".
-            double bmr = 10 * user.Weight + 6.25 * user.Height - 5 * user.Age + 5;
+            // ЗАХИСТ: Якщо даних немає, ставимо дефолтні значення, щоб сервер не падав
+            double weight = user.Weight > 0 ? user.Weight : 70;
+            double height = user.Height > 0 ? user.Height : 170;
+            int age = user.Age > 0 ? user.Age : 25;
+            string activity = !string.IsNullOrEmpty(user.ActivityLevel) ? user.ActivityLevel : "sedentary";
+            string goal = !string.IsNullOrEmpty(user.Goal) ? user.Goal : "maintain weight";
 
-            // Розрахунок денної норми калорій (TDEE) з урахуванням активності
-            double tdee = bmr * GetActivityMultiplier(user.ActivityLevel);
+            // Розрахунок BMR (Mifflin-St Jeor)
+            double bmr = 10 * weight + 6.25 * height - 5 * age + 5;
 
-            // Корекція калорій в залежності від мети
-            double targetCalories = tdee + GetGoalModifier(user.Goal);
+            // TDEE
+            double tdee = bmr * GetActivityMultiplier(activity);
 
-            // Розрахунок БЖУ в грамах
-            // (1г білка = 4 ккал, 1г жиру = 9 ккал, 1г вуглеводу = 4 ккал)
+            // Goal correction
+            double targetCalories = tdee + GetGoalModifier(goal);
+
+            // Macros
             double proteins, fats, carbs;
 
-            switch (user.Goal.ToLower())
+            switch (goal.ToLower())
             {
-                case "gain muscle": // Набір маси
+                case "gain muscle":
                 case "набір маси":
                     proteins = (targetCalories * 0.30) / 4;
                     fats = (targetCalories * 0.30) / 9;
                     carbs = (targetCalories * 0.40) / 4;
                     break;
 
-                case "maintain weight": // Підтримка ваги
-                case "підтримка ваги":
-                    proteins = (targetCalories * 0.25) / 4;
-                    fats = (targetCalories * 0.30) / 9;
-                    carbs = (targetCalories * 0.45) / 4;
-                    break;
-
-                case "lose weight": // Схуднення
+                case "lose weight":
                 case "схуднення":
-                default:
                     proteins = (targetCalories * 0.40) / 4;
                     fats = (targetCalories * 0.30) / 9;
                     carbs = (targetCalories * 0.30) / 4;
+                    break;
+
+                case "maintain weight":
+                case "підтримка ваги":
+                default:
+                    proteins = (targetCalories * 0.25) / 4;
+                    fats = (targetCalories * 0.30) / 9;
+                    carbs = (targetCalories * 0.45) / 4;
                     break;
             }
 
@@ -56,6 +61,8 @@ namespace BjuApiServer.Services
 
         private double GetActivityMultiplier(string activityLevel)
         {
+            if (string.IsNullOrEmpty(activityLevel)) return 1.2;
+
             return activityLevel.ToLower() switch
             {
                 "sedentary" or "сидячий" => 1.2,
@@ -68,10 +75,12 @@ namespace BjuApiServer.Services
 
         private int GetGoalModifier(string goal)
         {
+            if (string.IsNullOrEmpty(goal)) return 0;
+
             return goal.ToLower() switch
             {
-                "gain muscle" or "набір маси" => 300,  // Профіцит 300 ккал
-                "lose weight" or "схуднення" => -300, // Дефіцит 300 ккал
+                "gain muscle" or "набір маси" => 300,
+                "lose weight" or "схуднення" => -300,
                 _ => 0
             };
         }

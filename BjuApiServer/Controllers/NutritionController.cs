@@ -2,7 +2,7 @@
 using BjuApiServer.Models;
 using BjuApiServer.Services;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore; // <--- ОСЬ ЦЕЙ РЯДОК ПОТРІБНО ДОДАТИ
+using Microsoft.EntityFrameworkCore;
 
 namespace BjuApiServer.Controllers
 {
@@ -31,60 +31,75 @@ namespace BjuApiServer.Controllers
         public async Task<IActionResult> GenerateCustomPlan([FromBody] GenerateCustomPlanRequest request)
         {
             var user = await _context.Users.FindAsync(request.UserId);
-            if (user == null)
-            {
-                return NotFound($"User with ID {request.UserId} not found.");
-            }
+            if (user == null) return NotFound("User not found.");
 
-            var bjuResult = _bjuService.Calculate(user);
+            // 1. Рахуємо математику
+            var bju = _bjuService.Calculate(user);
 
-            var prompt = $"Створи детальний план харчування на один день для людини з такими цілями та показниками:" +
-                         $"\n- Мета: {user.Goal}" +
-                         $"\n- Денна норма калорій: {bjuResult.Calories} ккал" +
-                         $"\n- Білки: {bjuResult.Proteins} г" +
-                         $"\n- Жири: {bjuResult.Fats} г" +
-                         $"\n- Вуглеводи: {bjuResult.Carbs} г" +
-                         $"\n\nПлан має включати 3 основні прийоми їжі (сніданок, обід, вечеря) та 1-2 перекуси." +
-                         $"Для кожної страви вкажи приблизний розмір порції в грамах та її калорійність. Відповідь надай українською мовою у форматі Markdown.";
+            // 2. Формуємо "Інженерний" промпт для JSON
+            var prompt = $@"
+            Ти — професійний дієтолог. Твоє завдання — згенерувати план харчування у форматі JSON.
+            
+            ПРОФІЛЬ КОРИСТУВАЧА:
+            - Стать: {user.Gender}
+            - Ціль: {user.Goal}
+            - Калорії: {bju.Calories} ккал
+            - Білки: {bju.Proteins} г
+            - Жири: {bju.Fats} г
+            - Вуглеводи: {bju.Carbs} г
 
-            _logger.LogInformation("Generating custom plan for user {UserId}", user.Id);
+            ВИМОГИ ДО ВІДПОВІДІ:
+            Поверни ЛИШЕ JSON об'єкт (без Markdown, без ```json) за такою схемою:
+            {{
+              ""summary"": ""Короткий коментар дієтолога (1 речення)"",
+              ""meals"": [
+                {{
+                  ""name"": ""Назва прийому (Сніданок)"",
+                  ""time"": ""08:00"",
+                  ""foods"": [
+                    {{ ""name"": ""Продукт"", ""weight"": ""грами/шт"", ""calories"": 100, ""protein"": 5, ""fat"": 2, ""carbs"": 10 }}
+                  ],
+                  ""totalCalories"": 0
+                }}
+              ]
+            }}
+            Зроби 3 основних прийоми + 1-2 перекуси. Назви страв українською.";
+
+            _logger.LogInformation("Generating JSON plan for user {UserId}", user.Id);
 
             try
             {
-                var mealPlanText = await _geminiService.GenerateMealPlanAsync(prompt);
+                // 3. Отримуємо чистий JSON
+                var jsonPlan = await _geminiService.GenerateMealPlanAsync(prompt);
 
+                // 4. Зберігаємо в БД як рядок (клієнт розпарсить)
                 var newMealPlan = new MealPlan
                 {
                     UserId = user.Id,
-                    Plan = mealPlanText,
+                    Plan = jsonPlan, // Тут тепер лежить JSON, а не текст
                     Date = DateTime.UtcNow
                 };
+
                 _context.MealPlans.Add(newMealPlan);
                 await _context.SaveChangesAsync();
 
-                return Ok(new { MealPlan = mealPlanText });
+                // Повертаємо клієнту теж JSON
+                return Content(jsonPlan, "application/json");
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to generate custom meal plan for user {UserId}", user.Id);
-                return StatusCode(500, "An internal error occurred while generating the meal plan.");
+                _logger.LogError(ex, "Error generating plan.");
+                return StatusCode(500, "Internal Server Error");
             }
         }
 
         [HttpGet("history/{userId}")]
         public async Task<IActionResult> GetHistory(int userId)
         {
-            var userExists = await _context.Users.AnyAsync(u => u.Id == userId);
-            if (!userExists)
-            {
-                return NotFound($"User with ID {userId} not found.");
-            }
-
             var history = await _context.MealPlans
                                         .Where(p => p.UserId == userId)
                                         .OrderByDescending(p => p.Date)
                                         .ToListAsync();
-
             return Ok(history);
         }
     }

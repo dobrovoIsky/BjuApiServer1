@@ -8,5 +8,6 @@
         public int Age { get; set; }
         public string Goal { get; set; } = string.Empty;
         public string ActivityLevel { get; set; } = string.Empty;
+        public int AvatarId { get; set; } = 1; // Нове поле для аватара
     }
 }

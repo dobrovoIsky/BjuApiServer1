@@ -12,6 +12,9 @@ public class User
     public string ActivityLevel { get; set; } = "Normal";
 
     // Нові поля для налаштувань
-    public string Theme { get; set; } = "light"; // Тема за замовчуванням
-    public string Language { get; set; } = "uk";  // Мова за замовчуванням
+    public string Theme { get; set; } = "light";
+    public string Language { get; set; } = "uk";
+
+    // Нове поле для аватара
+    public int AvatarId { get; set; } = 1; // За замовчуванням 1
 }
