@@ -16,5 +16,8 @@ public class User
     public string Language { get; set; } = "uk";
 
     // Нове поле для аватара
-    public int AvatarId { get; set; } = 1; // За замовчуванням 1
+    public int AvatarId { get; set; } = 1;
+
+    // Нове поле для статі
+    public string Gender { get; set; } = "male";
 }

@@ -44,7 +44,8 @@ namespace BjuApiServer.Controllers
                 Goal = user.Goal,
                 ActivityLevel = user.ActivityLevel,
                 CalculatedBju = bjuResult,
-                AvatarId = user.AvatarId // Додано
+                AvatarId = user.AvatarId,
+                Gender = user.Gender
             };
             return Ok(userProfile);
         }
@@ -62,7 +63,8 @@ namespace BjuApiServer.Controllers
             user.Age = updateUserDto.Age;
             user.Goal = updateUserDto.Goal;
             user.ActivityLevel = updateUserDto.ActivityLevel;
-            user.AvatarId = updateUserDto.AvatarId; // Додано
+            user.AvatarId = updateUserDto.AvatarId;
+            user.Gender = updateUserDto.Gender;
 
             await _context.SaveChangesAsync();
 
@@ -77,7 +79,8 @@ namespace BjuApiServer.Controllers
                 Goal = user.Goal,
                 ActivityLevel = user.ActivityLevel,
                 CalculatedBju = bjuResult,
-                AvatarId = user.AvatarId // Додано
+                AvatarId = user.AvatarId,
+                Gender = user.Gender
             };
             return Ok(userProfile);
         }
