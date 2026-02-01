@@ -43,9 +43,11 @@ namespace BjuApiServer.Controllers
                 Age = user.Age,
                 Goal = user.Goal,
                 ActivityLevel = user.ActivityLevel,
-                CalculatedBju = bjuResult,
+                Bju = bjuResult,
                 AvatarId = user.AvatarId,
-                Gender = user.Gender
+                Gender = user.Gender,
+                Theme = user.Theme,
+                Language = user.Language
             };
             return Ok(userProfile);
         }
@@ -78,9 +80,11 @@ namespace BjuApiServer.Controllers
                 Age = user.Age,
                 Goal = user.Goal,
                 ActivityLevel = user.ActivityLevel,
-                CalculatedBju = bjuResult,
+                Bju = bjuResult,
                 AvatarId = user.AvatarId,
-                Gender = user.Gender
+                Gender = user.Gender,
+                Theme = user.Theme,
+                Language = user.Language
             };
             return Ok(userProfile);
         }

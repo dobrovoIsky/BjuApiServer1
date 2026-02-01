@@ -27,6 +27,13 @@ builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
+// Застосувати міграції для створення БД
+using (var scope = app.Services.CreateScope())
+{
+    var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    context.Database.Migrate();
+}
+
 // Увімкнути Swagger і в продакшені
 app.UseSwagger();
 app.UseSwaggerUI();

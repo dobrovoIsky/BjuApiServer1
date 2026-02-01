@@ -12,8 +12,10 @@ namespace BjuApiServer.DTO
         public int Age { get; set; }
         public string Goal { get; set; } = string.Empty;
         public string ActivityLevel { get; set; } = string.Empty;
-        public BjuResult CalculatedBju { get; set; }
+        public BjuResult Bju { get; set; }
         public int AvatarId { get; set; } = 1;
         public string Gender { get; set; } = "male";
+        public string Theme { get; set; } = "light";
+        public string Language { get; set; } = "uk";
     }
 }
