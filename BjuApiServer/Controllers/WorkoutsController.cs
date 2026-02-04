@@ -25,10 +25,6 @@ namespace BjuApiServer.Controllers
             _logger = logger;
         }
 
-        /// <summary>
-        /// Генерує план тренувань для користувача з використанням Gemini
-        /// і зберігає його в базу.
-        /// </summary>
         [HttpPost("generate")]
         public async Task<IActionResult> GenerateWorkout([FromBody] WorkoutRequestDto request)
         {
@@ -43,29 +39,59 @@ namespace BjuApiServer.Controllers
                 return NotFound($"User with ID {request.UserId} not found.");
             }
 
-            // Формуємо промпт для Gemini
-            var prompt =
-                $"Склади детальний план тренувань українською мовою для користувача " +
-                $"з такими характеристиками:" +
-                $"\n- Вік: {user.Age} років" +
-                $"\n- Зріст: {user.Height} см" +
-                $"\n- Вага: {user.Weight} кг" +
-                $"\n- Ціль користувача: {user.Goal}" +
-                $"\n- Рівень активності: {user.ActivityLevel}" +
-                $"\n\nДодаткові параметри тренування:" +
-                $"\n- Ціль тренувань: {request.Goal}" +
-                $"\n- Інтенсивність: {request.Intensity}" +
-                $"\n- Тривалість: {request.DurationMinutes} хвилин на день." +
-                "\n\nСклади план на 7 днів (або тижневий цикл), " +
-                "розбий по днях, вкажи вправи, підходи, повторення, " +
-                "рекомендації з розминки та заминки. Оформи відповідь у читабельному вигляді.";
+            // Новий промпт для JSON на 1 день
+            var prompt = $@"
+Ти — професійний фітнес-тренер. Склади план тренування на ОДИН ДЕНЬ українською мовою.
+
+ПРОФІЛЬ КОРИСТУВАЧА:
+- Вік: {user.Age} років
+- Зріст: {user.Height} см
+- Вага: {user.Weight} кг
+- Загальна ціль: {user.Goal}
+- Рівень активності: {user.ActivityLevel}
+- Стать: {user.Gender}
+
+ПАРАМЕТРИ ТРЕНУВАННЯ:
+- Тип тренування: {request.Goal}
+- Інтенсивність: {request.Intensity}
+- Тривалість: {request.DurationMinutes} хвилин
+
+ВИМОГИ ДО ВІДПОВІДІ:
+Поверни ЛИШЕ JSON об'єкт (без Markdown, без ```json) за такою схемою:
+{{
+  ""summary"": ""Короткий опис тренування (1 речення)"",
+  ""warmup"": {{
+    ""duration"": 5,
+    ""exercises"": [""Вправа 1"", ""Вправа 2"", ""Вправа 3""]
+  }},
+  ""workout"": [
+    {{
+      ""name"": ""Назва вправи"",
+      ""sets"": 3,
+      ""reps"": ""12"",
+      ""rest"": ""60 сек"",
+      ""tips"": ""Короткі поради з техніки""
+    }}
+  ],
+  ""cooldown"": {{
+    ""duration"": 5,
+    ""exercises"": [""Розтяжка 1"", ""Розтяжка 2""]
+  }},
+  ""totalCalories"": 300
+}}
+
+Створи 5-8 вправ в залежності від тривалості. Враховуй тип тренування:
+- Якщо кардіо: біг, скакалка, берпі, велосипед тощо
+- Якщо силове в залі: жим, присідання, тяга, тренажери
+- Якщо вдома: планка, віджимання, присідання, випади
+
+Назви вправ українською!";
 
             _logger.LogInformation("Generating workout plan for user {UserId}", user.Id);
 
             try
             {
-                // Використовуємо вже існуючий метод для Gemini
-                var workoutText = await _geminiService.GenerateMealPlanAsync(prompt);
+                var workoutJson = await _geminiService.GenerateMealPlanAsync(prompt);
 
                 var workoutPlan = new WorkoutPlan
                 {
@@ -73,13 +99,14 @@ namespace BjuApiServer.Controllers
                     Goal = request.Goal,
                     Intensity = request.Intensity,
                     DurationMinutes = request.DurationMinutes,
-                    PlanText = workoutText,
+                    PlanText = workoutJson,
                     CreatedAt = DateTime.UtcNow
                 };
 
                 _context.WorkoutPlans.Add(workoutPlan);
                 await _context.SaveChangesAsync();
 
+                // Повертаємо DTO
                 var responseDto = new WorkoutPlanDto
                 {
                     Id = workoutPlan.Id,
@@ -99,34 +126,24 @@ namespace BjuApiServer.Controllers
             }
         }
 
-        /// <summary>
-        /// Повертає історію планів тренувань користувача.
-        /// </summary>
         [HttpGet("history/{userId}")]
-        public async Task<IActionResult> GetUserWorkouts(int userId)
+        public async Task<IActionResult> GetHistory(int userId)
         {
-            var userExists = await _context.Users.AnyAsync(u => u.Id == userId);
-            if (!userExists)
-            {
-                return NotFound($"User with ID {userId} not found.");
-            }
-
-            var plans = await _context.WorkoutPlans
+            var history = await _context.WorkoutPlans
                 .Where(w => w.UserId == userId)
                 .OrderByDescending(w => w.CreatedAt)
+                .Select(w => new WorkoutPlanDto
+                {
+                    Id = w.Id,
+                    Goal = w.Goal,
+                    Intensity = w.Intensity,
+                    DurationMinutes = w.DurationMinutes,
+                    PlanText = w.PlanText,
+                    CreatedAt = w.CreatedAt
+                })
                 .ToListAsync();
 
-            var result = plans.Select(w => new WorkoutPlanDto
-            {
-                Id = w.Id,
-                Goal = w.Goal,
-                Intensity = w.Intensity,
-                DurationMinutes = w.DurationMinutes,
-                PlanText = w.PlanText,
-                CreatedAt = w.CreatedAt
-            });
-
-            return Ok(result);
+            return Ok(history);
         }
     }
 }

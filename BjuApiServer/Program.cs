@@ -13,6 +13,7 @@ builder.Services.AddScoped<BjuCalculationService>();
 builder.Services.AddHttpClient<GeminiService>();
 builder.Services.Configure<OllamaOptions>(builder.Configuration.GetSection("Ollama"));
 builder.Services.AddSingleton<JsonDbService>();
+builder.Services.AddHttpClient();
 
 // CORS (дозволити все, можна звузити за потреби)
 builder.Services.AddCors(o => o.AddDefaultPolicy(p =>

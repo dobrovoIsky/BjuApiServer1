@@ -1,23 +1,32 @@
-﻿namespace BjuApiServer.Models;
+﻿using System.ComponentModel.DataAnnotations;
 
-public class User
+namespace BjuApiServer.Models
 {
-    public int Id { get; set; }
-    public string Username { get; set; } = string.Empty;
-    public string PasswordHash { get; set; } = string.Empty;
-    public double Height { get; set; }
-    public double Weight { get; set; }
-    public int Age { get; set; }
-    public string Goal { get; set; } = string.Empty;
-    public string ActivityLevel { get; set; } = "Normal";
+    public class User
+    {
+        [Key]
+        public int Id { get; set; }
 
-    // Нові поля для налаштувань
-    public string Theme { get; set; } = "light";
-    public string Language { get; set; } = "uk";
+        [Required]
+        public string Username { get; set; } = string.Empty;
 
-    // Нове поле для аватара
-    public int AvatarId { get; set; } = 1;
+        [Required]
+        public string PasswordHash { get; set; } = string.Empty;
 
-    // Нове поле для статі
-    public string Gender { get; set; } = "male";
+        public string Email { get; set; } = string.Empty;
+
+        public double Height { get; set; }
+        public double Weight { get; set; }
+        public int Age { get; set; }
+        public string Goal { get; set; } = string.Empty;
+        public string ActivityLevel { get; set; } = "Normal";
+        public string Theme { get; set; } = "light";
+        public string Language { get; set; } = "uk";
+        public string Gender { get; set; } = "male";
+        public int AvatarId { get; set; } = 1;
+
+        // Google Auth
+        public string? GoogleId { get; set; }
+        public bool IsGoogleUser { get; set; } = false;
+    }
 }
