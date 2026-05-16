@@ -1,4 +1,4 @@
-﻿using BjuApiServer.Data;
+using BjuApiServer.Data;
 using BjuApiServer.Services;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
@@ -36,11 +36,10 @@ app.UseForwardedHeaders(new ForwardedHeadersOptions
     ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
 });
 
-// Auto-migrate on startup
+// Auto-migrate and seed on startup
 using (var scope = app.Services.CreateScope())
 {
-    var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    context.Database.Migrate();
+    await ProductSeeder.SeedProductsAsync(scope.ServiceProvider);
 }
 
 // Swagger

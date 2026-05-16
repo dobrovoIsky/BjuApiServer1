@@ -11,4 +11,5 @@ public class AppDbContext : DbContext
     public DbSet<MealPlan> MealPlans => Set<MealPlan>();
     public DbSet<WorkoutPlan> WorkoutPlans => Set<WorkoutPlan>();
     public DbSet<FoodEntry> FoodEntries => Set<FoodEntry>();
+    public DbSet<ProductItem> ProductItems => Set<ProductItem>();
 }

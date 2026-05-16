@@ -1,4 +1,4 @@
-﻿using BjuApiServer.Data;
+using BjuApiServer.Data;
 using BjuApiServer.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -73,6 +73,23 @@ namespace BjuApiServer.Controllers
             _context.FoodEntries.Remove(entry);
             await _context.SaveChangesAsync();
             return Ok(new { message = "Deleted" });
+        }
+        // GET: /api/tracker/products
+        [HttpGet("products")]
+        public async Task<IActionResult> GetProducts()
+        {
+            try
+            {
+                var products = await _context.ProductItems
+                    .OrderBy(p => p.Name)
+                    .ToListAsync();
+                
+                return Ok(products);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { error = "Помилка при отриманні продуктів", details = ex.Message });
+            }
         }
     }
 }
