@@ -3,5 +3,10 @@
     public class GenerateCustomPlanRequest
     {
         public int UserId { get; set; }
+        
+        /// <summary>
+        /// Опціональний список наявних продуктів, які AI має враховувати при генерації плану
+        /// </summary>
+        public List<string>? AvailableProducts { get; set; }
     }
 }

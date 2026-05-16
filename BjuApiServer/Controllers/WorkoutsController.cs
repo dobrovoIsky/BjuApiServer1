@@ -39,6 +39,19 @@ namespace BjuApiServer.Controllers
                 return NotFound($"User with ID {request.UserId} not found.");
             }
 
+            // Секція обладнання
+            var equipmentSection = "";
+            if (request.AvailableEquipment != null && request.AvailableEquipment.Count > 0)
+            {
+                var equipmentList = string.Join(", ", request.AvailableEquipment);
+                equipmentSection = $@"
+
+НАЯВНЕ ОБЛАДНАННЯ В ЗАЛІ:
+{equipmentList}
+
+ВАЖЛИВО: Використовуй ТІЛЬКИ вправи, які можна виконати з наявним обладнанням! Не пропонуй вправи на тренажерах, яких немає у списку.";
+            }
+
             // Новий промпт для JSON на 1 день
             var prompt = $@"
 Ти — професійний фітнес-тренер. Склади план тренування на ОДИН ДЕНЬ українською мовою.
@@ -55,6 +68,7 @@ namespace BjuApiServer.Controllers
 - Тип тренування: {request.Goal}
 - Інтенсивність: {request.Intensity}
 - Тривалість: {request.DurationMinutes} хвилин
+{equipmentSection}
 
 ВИМОГИ ДО ВІДПОВІДІ:
 Поверни ЛИШЕ JSON об'єкт (без Markdown, без ```json) за такою схемою:

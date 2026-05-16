@@ -8,8 +8,7 @@ namespace BjuApiServer.Data
         public AppDbContext CreateDbContext(string[] args)
         {
             var optionsBuilder = new DbContextOptionsBuilder<AppDbContext>();
-            optionsBuilder.UseSqlite("Data Source=bju.db");
-
+            optionsBuilder.UseNpgsql("Host=localhost;Database=bju;Username=postgres;Password=postgres");
             return new AppDbContext(optionsBuilder.Options);
         }
     }

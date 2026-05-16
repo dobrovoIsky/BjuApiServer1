@@ -1,12 +1,13 @@
-using BjuApiServer.Data;
+п»їusing BjuApiServer.Data;
 using BjuApiServer.Services;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// DbContext
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ?? "Data Source=bju.db";
-builder.Services.AddDbContext<AppDbContext>(options => options.UseSqlite(connectionString));
+// DbContext - PostgreSQL (Neon)
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
+    ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
+builder.Services.AddDbContext<AppDbContext>(options => options.UseNpgsql(connectionString));
 
 // Services
 builder.Services.AddScoped<BjuCalculationService>();
@@ -15,7 +16,7 @@ builder.Services.Configure<OllamaOptions>(builder.Configuration.GetSection("Olla
 builder.Services.AddSingleton<JsonDbService>();
 builder.Services.AddHttpClient();
 
-// CORS (дозволити все, можна звузити за потреби)
+// CORS
 builder.Services.AddCors(o => o.AddDefaultPolicy(p =>
     p.AllowAnyOrigin()
      .AllowAnyHeader()
@@ -28,18 +29,18 @@ builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
-// Застосувати міграції для створення БД
+// Auto-migrate on startup
 using (var scope = app.Services.CreateScope())
 {
     var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     context.Database.Migrate();
 }
 
-// Увімкнути Swagger і в продакшені
+// Swagger
 app.UseSwagger();
 app.UseSwaggerUI();
 
-app.UseHttpsRedirection();
+// Render handles HTTPS via reverse proxy - no UseHttpsRedirection needed
 app.UseCors();
 app.UseAuthorization();
 app.MapControllers();

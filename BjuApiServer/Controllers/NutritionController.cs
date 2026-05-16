@@ -36,7 +36,20 @@ namespace BjuApiServer.Controllers
             // 1. Рахуємо математику
             var bju = _bjuService.Calculate(user);
 
-            // 2. Формуємо "Інженерний" промпт для JSON
+            // 2. Формуємо частину промпту для наявних продуктів
+            var availableProductsSection = "";
+            if (request.AvailableProducts != null && request.AvailableProducts.Count > 0)
+            {
+                var productsList = string.Join(", ", request.AvailableProducts);
+                availableProductsSection = $@"
+
+            НАЯВНІ ПРОДУКТИ У КОРИСТУВАЧА:
+            {productsList}
+            
+            ВАЖЛИВО: Побудуй план харчування ПЕРЕВАЖНО з цих продуктів! Якщо потрібні додаткові інгредієнти - використовуй мінімально.";
+            }
+
+            // 3. Формуємо "Інженерний" промпт для JSON
             var prompt = $@"
             Ти — професійний дієтолог. Твоє завдання — згенерувати план харчування у форматі JSON.
             
@@ -47,6 +60,7 @@ namespace BjuApiServer.Controllers
             - Білки: {bju.Proteins} г
             - Жири: {bju.Fats} г
             - Вуглеводи: {bju.Carbs} г
+            {availableProductsSection}
 
             ВИМОГИ ДО ВІДПОВІДІ:
             Поверни ЛИШЕ JSON об'єкт (без Markdown, без ```json) за такою схемою:

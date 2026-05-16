@@ -21,5 +21,10 @@
         /// Скільки хвилин на день користувач готовий тренуватись.
         /// </summary>
         public int DurationMinutes { get; set; } = 45;
+
+        /// <summary>
+        /// Список наявного обладнання в залі (опційно).
+        /// </summary>
+        public List<string>? AvailableEquipment { get; set; }
     }
 }
