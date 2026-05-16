@@ -1,4 +1,4 @@
-﻿using BjuApiServer.Data;
+using BjuApiServer.Data;
 using BjuApiServer.Models;
 using BjuApiServer.Services;
 using Microsoft.AspNetCore.Mvc;
@@ -115,6 +115,18 @@ namespace BjuApiServer.Controllers
                                         .OrderByDescending(p => p.Date)
                                         .ToListAsync();
             return Ok(history);
+        }
+
+        [HttpPut("history/{planId}/favorite")]
+        public async Task<IActionResult> ToggleFavorite(int planId)
+        {
+            var plan = await _context.MealPlans.FindAsync(planId);
+            if (plan == null) return NotFound("Plan not found.");
+
+            plan.IsFavorite = !plan.IsFavorite;
+            await _context.SaveChangesAsync();
+
+            return Ok(new { message = "Favorite status updated", isFavorite = plan.IsFavorite });
         }
     }
 }

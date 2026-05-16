@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 
 namespace BjuApiServer.Models
 {
@@ -12,5 +12,8 @@ namespace BjuApiServer.Models
 
         // Дата, на яку цей план згенеровано
         public DateTime Date { get; set; }
+
+        // Чи додано план у вибране
+        public bool IsFavorite { get; set; }
     }
 }
