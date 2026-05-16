@@ -1,5 +1,6 @@
 ﻿using BjuApiServer.Data;
 using BjuApiServer.Services;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -28,6 +29,12 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
+
+// Forward headers from Render reverse proxy (needed for Google OAuth redirect URI)
+app.UseForwardedHeaders(new ForwardedHeadersOptions
+{
+    ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
+});
 
 // Auto-migrate on startup
 using (var scope = app.Services.CreateScope())
