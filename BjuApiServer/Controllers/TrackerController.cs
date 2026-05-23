@@ -74,6 +74,26 @@ namespace BjuApiServer.Controllers
             await _context.SaveChangesAsync();
             return Ok(new { message = "Deleted" });
         }
+
+        [HttpPut("log/{id}")]
+        public async Task<IActionResult> UpdateEntry(int id, [FromBody] FoodEntry updatedEntry)
+        {
+            var entry = await _context.FoodEntries.FindAsync(id);
+            if (entry == null) return NotFound();
+
+            entry.Name = updatedEntry.Name;
+            entry.Calories = updatedEntry.Calories;
+            entry.Protein = updatedEntry.Protein;
+            entry.Fat = updatedEntry.Fat;
+            entry.Carbs = updatedEntry.Carbs;
+            entry.Weight = updatedEntry.Weight;
+            entry.MealType = updatedEntry.MealType;
+            // Intentionally not updating LoggedAt so it keeps the original timestamp
+
+            await _context.SaveChangesAsync();
+            return Ok(entry);
+        }
+
         // GET: /api/tracker/products
         [HttpGet("products")]
         public async Task<IActionResult> GetProducts()
