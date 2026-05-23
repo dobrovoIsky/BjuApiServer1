@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 
 namespace BjuApiServer.Models
 {
@@ -13,6 +13,7 @@ namespace BjuApiServer.Models
         public double Fat { get; set; }
         public double Carbs { get; set; }
         public double Weight { get; set; }
+        public string MealType { get; set; } = string.Empty;
         public DateTime LoggedAt { get; set; } = DateTime.UtcNow;
     }
 }
