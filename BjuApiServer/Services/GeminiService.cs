@@ -1,4 +1,4 @@
-﻿using System.Text;
+using System.Text;
 using System.Text.Json;
 
 namespace BjuApiServer.Services;
@@ -35,7 +35,12 @@ public class GeminiService
 
         var requestBody = new
         {
-            contents = new[] { new { parts = new[] { new { text = prompt } } } }
+            contents = new[] { new { parts = new[] { new { text = prompt } } } },
+            generationConfig = new
+            {
+                temperature = 0.5,
+                responseMimeType = "application/json"
+            }
         };
 
         var jsonContent = new StringContent(JsonSerializer.Serialize(requestBody), Encoding.UTF8, "application/json");
