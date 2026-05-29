@@ -128,5 +128,23 @@ namespace BjuApiServer.Controllers
 
             return Ok(new { message = "Favorite status updated", isFavorite = plan.IsFavorite });
         }
+
+        [HttpPost("analyze-image")]
+        public async Task<IActionResult> AnalyzeImage([FromBody] AnalyzeImageRequest request)
+        {
+            if (string.IsNullOrEmpty(request?.Base64Image))
+                return BadRequest("No image provided.");
+
+            try
+            {
+                var jsonResult = await _geminiService.AnalyzeFoodImageAsync(request.Base64Image);
+                return Content(jsonResult, "application/json");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error analyzing image.");
+                return StatusCode(500, new { error = ex.Message });
+            }
+        }
     }
 }

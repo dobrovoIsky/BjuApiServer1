@@ -64,4 +64,61 @@ public class GeminiService
 
         return resultText;
     }
+
+    public async Task<string> AnalyzeFoodImageAsync(string base64Image)
+    {
+        _logger.LogInformation("Sending image to Gemini API using model {Model}", _modelName);
+
+        var prompt = "Analyze this food image. Identify what it is, and provide a reasonable estimation of its nutritional values per 100g. Return ONLY a valid JSON object matching exactly this structure with no markdown formatting: {\"Name\": \"Food name in Ukrainian\", \"CaloriesPer100g\": 250, \"ProteinPer100g\": 10.5, \"FatPer100g\": 8.2, \"CarbsPer100g\": 30.1}";
+
+        var requestBody = new
+        {
+            contents = new[]
+            {
+                new
+                {
+                    parts = new object[]
+                    {
+                        new { text = prompt },
+                        new
+                        {
+                            inlineData = new
+                            {
+                                mimeType = "image/jpeg",
+                                data = base64Image
+                            }
+                        }
+                    }
+                }
+            },
+            generationConfig = new
+            {
+                temperature = 0.4,
+                responseMimeType = "application/json"
+            }
+        };
+
+        var jsonContent = new StringContent(JsonSerializer.Serialize(requestBody), Encoding.UTF8, "application/json");
+        var response = await _httpClient.PostAsync(_geminiApiUrl, jsonContent);
+
+        if (!response.IsSuccessStatusCode)
+        {
+            var errorBody = await response.Content.ReadAsStringAsync();
+            _logger.LogError("Gemini API error during image analysis. Status: {Status} Body: {Body}", response.StatusCode, errorBody);
+            throw new Exception($"Gemini API error: {response.StatusCode}");
+        }
+
+        var responseJson = await response.Content.ReadAsStringAsync();
+        var geminiResponse = JsonSerializer.Deserialize<GeminiResponse>(responseJson, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+
+        var resultText = geminiResponse?.Candidates?.FirstOrDefault()?.Content?.Parts?.FirstOrDefault()?.Text;
+
+        if (string.IsNullOrEmpty(resultText))
+        {
+            _logger.LogWarning("Gemini API returned empty response for image analysis.");
+            throw new Exception("AI service returned an empty response.");
+        }
+
+        return resultText;
+    }
 }
