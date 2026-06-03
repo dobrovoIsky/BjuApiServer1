@@ -111,5 +111,33 @@ namespace BjuApiServer.Controllers
                 return StatusCode(500, new { error = "Помилка при отриманні продуктів", details = ex.Message });
             }
         }
+
+        // POST: /api/tracker/products
+        [HttpPost("products")]
+        public async Task<IActionResult> AddProduct([FromBody] ProductItem newProduct)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(newProduct.Name))
+                    return BadRequest("Назва продукту не може бути порожньою");
+
+                // Check if already exists (case-insensitive)
+                var exists = await _context.ProductItems
+                    .AnyAsync(p => p.Name.ToLower() == newProduct.Name.ToLower());
+                
+                if (exists)
+                    return Conflict(new { message = "Продукт з такою назвою вже існує в базі." });
+
+                _context.ProductItems.Add(newProduct);
+                await _context.SaveChangesAsync();
+
+                return Ok(newProduct);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error adding product.");
+                return StatusCode(500, new { error = "Помилка при збереженні продукту", details = ex.Message });
+            }
+        }
     }
 }
