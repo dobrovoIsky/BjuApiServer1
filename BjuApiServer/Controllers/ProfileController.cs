@@ -44,7 +44,7 @@ namespace BjuApiServer.Controllers
                 Goal = user.Goal,
                 ActivityLevel = user.ActivityLevel,
                 Bju = bjuResult,
-                AvatarId = user.AvatarId,
+                AvatarBase64 = user.AvatarBase64,
                 Gender = user.Gender,
                 Theme = user.Theme,
                 Language = user.Language,
@@ -68,7 +68,6 @@ namespace BjuApiServer.Controllers
             user.Age = updateUserDto.Age;
             user.Goal = updateUserDto.Goal;
             user.ActivityLevel = updateUserDto.ActivityLevel;
-            user.AvatarId = updateUserDto.AvatarId;
             user.Gender = updateUserDto.Gender;
 
             await _context.SaveChangesAsync();
@@ -84,7 +83,7 @@ namespace BjuApiServer.Controllers
                 Goal = user.Goal,
                 ActivityLevel = user.ActivityLevel,
                 Bju = bjuResult,
-                AvatarId = user.AvatarId,
+                AvatarBase64 = user.AvatarBase64,
                 Gender = user.Gender,
                 Theme = user.Theme,
                 Language = user.Language,
@@ -93,6 +92,18 @@ namespace BjuApiServer.Controllers
                 CurrentStreak = user.CurrentStreak
             };
             return Ok(userProfile);
+        }
+
+        [HttpPut("{id}/avatar")]
+        public async Task<IActionResult> UpdateUserAvatar(int id, [FromBody] UpdateAvatarDto updateAvatarDto)
+        {
+            var user = await _context.Users.FindAsync(id);
+            if (user == null) return NotFound("User not found.");
+
+            user.AvatarBase64 = updateAvatarDto.AvatarBase64;
+            await _context.SaveChangesAsync();
+
+            return Ok(new { message = "Avatar updated successfully.", avatarBase64 = user.AvatarBase64 });
         }
 
         [HttpGet("{id}/settings")]
@@ -134,7 +145,7 @@ namespace BjuApiServer.Controllers
                 {
                     Id = u.Id,
                     Username = u.Username,
-                    AvatarId = u.AvatarId,
+                    AvatarBase64 = u.AvatarBase64,
                     Points = u.MonthlyPoints,
                     CurrentStreak = u.CurrentStreak
                 })

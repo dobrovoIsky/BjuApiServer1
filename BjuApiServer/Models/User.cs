@@ -23,7 +23,7 @@ namespace BjuApiServer.Models
         public string Theme { get; set; } = "light";
         public string Language { get; set; } = "uk";
         public string Gender { get; set; } = "male";
-        public int AvatarId { get; set; } = 1;
+        public string? AvatarBase64 { get; set; }
 
         // Google Auth
         public string? GoogleId { get; set; }

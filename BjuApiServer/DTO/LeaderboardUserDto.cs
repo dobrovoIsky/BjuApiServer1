@@ -6,7 +6,7 @@ namespace BjuApiServer.DTO
     {
         public int Id { get; set; }
         public string Username { get; set; } = string.Empty;
-        public int AvatarId { get; set; }
+        public string? AvatarBase64 { get; set; }
         public int Points { get; set; }
         public int CurrentStreak { get; set; }
     }

@@ -1,4 +1,4 @@
-﻿using BjuApiServer.Data;
+using BjuApiServer.Data;
 using BjuApiServer.DTO;
 using BjuApiServer.Models;
 using Microsoft.AspNetCore.Mvc;
@@ -64,7 +64,6 @@ namespace BjuApiServer.Controllers
                 Theme = "light",
                 Language = "uk",
                 Gender = userDto.Gender,
-                AvatarId = 1,
                 IsGoogleUser = false
             };
 
@@ -156,8 +155,7 @@ namespace BjuApiServer.Controllers
                         Age = 25,
                         Goal = "maintain weight",
                         ActivityLevel = "moderately active",
-                        Gender = "male",
-                        AvatarId = 1
+                        Gender = "male"
                     };
 
                     await _context.Users.AddAsync(user);
