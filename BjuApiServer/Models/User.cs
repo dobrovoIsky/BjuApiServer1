@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 
 namespace BjuApiServer.Models
 {
@@ -28,5 +28,10 @@ namespace BjuApiServer.Models
         // Google Auth
         public string? GoogleId { get; set; }
         public bool IsGoogleUser { get; set; } = false;
+
+        // Ranking and Streaks
+        public int Points { get; set; } = 0;
+        public int CurrentStreak { get; set; } = 0;
+        public DateTime? LastGoalReachedDate { get; set; }
     }
 }

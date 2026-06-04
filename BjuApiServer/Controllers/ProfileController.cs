@@ -1,4 +1,4 @@
-﻿using BjuApiServer.Data;
+using BjuApiServer.Data;
 using BjuApiServer.DTO;
 using BjuApiServer.Services;
 using Microsoft.AspNetCore.Mvc;
@@ -47,7 +47,9 @@ namespace BjuApiServer.Controllers
                 AvatarId = user.AvatarId,
                 Gender = user.Gender,
                 Theme = user.Theme,
-                Language = user.Language
+                Language = user.Language,
+                Points = user.Points,
+                CurrentStreak = user.CurrentStreak
             };
             return Ok(userProfile);
         }
@@ -84,7 +86,9 @@ namespace BjuApiServer.Controllers
                 AvatarId = user.AvatarId,
                 Gender = user.Gender,
                 Theme = user.Theme,
-                Language = user.Language
+                Language = user.Language,
+                Points = user.Points,
+                CurrentStreak = user.CurrentStreak
             };
             return Ok(userProfile);
         }
@@ -116,6 +120,77 @@ namespace BjuApiServer.Controllers
 
             await _context.SaveChangesAsync();
             return Ok(new { message = "Settings updated successfully." });
+        }
+
+        [HttpGet("leaderboard")]
+        public async Task<IActionResult> GetLeaderboard()
+        {
+            var users = await _context.Users
+                .OrderByDescending(u => u.Points)
+                .Take(50)
+                .Select(u => new LeaderboardUserDto
+                {
+                    Id = u.Id,
+                    Username = u.Username,
+                    AvatarId = u.AvatarId,
+                    Points = u.Points,
+                    CurrentStreak = u.CurrentStreak
+                })
+                .ToListAsync();
+
+            return Ok(users);
+        }
+
+        [HttpPost("{id}/check-streak")]
+        public async Task<IActionResult> CheckStreak(int id)
+        {
+            var user = await _context.Users.FindAsync(id);
+            if (user == null) return NotFound("User not found.");
+
+            var today = DateTime.UtcNow.Date;
+            var nextDay = today.AddDays(1);
+
+            // Get total calories for today
+            var totalCaloriesToday = await _context.FoodEntries
+                .Where(f => f.UserId == id && f.LoggedAt >= today && f.LoggedAt < nextDay)
+                .SumAsync(f => f.Calories);
+
+            var bjuGoal = _bjuService.Calculate(user);
+            var isGoalReached = totalCaloriesToday >= (bjuGoal.Calories * 0.8) && totalCaloriesToday <= (bjuGoal.Calories * 1.15); // goal reached if between 80% and 115%
+
+            if (isGoalReached)
+            {
+                if (user.LastGoalReachedDate == null || user.LastGoalReachedDate.Value.Date < today)
+                {
+                    // Update streak
+                    if (user.LastGoalReachedDate != null && user.LastGoalReachedDate.Value.Date == today.AddDays(-1))
+                    {
+                        user.CurrentStreak++;
+                    }
+                    else
+                    {
+                        user.CurrentStreak = 1; // Restart streak
+                    }
+                    
+                    user.LastGoalReachedDate = today;
+                    user.Points += 10 + (user.CurrentStreak * 2); // points formula based on streak
+                    await _context.SaveChangesAsync();
+
+                    return Ok(new { StreakUpdated = true, CurrentStreak = user.CurrentStreak, PointsEarned = 10 + (user.CurrentStreak * 2), TotalPoints = user.Points });
+                }
+            }
+            else
+            {
+                // Check if they broke their streak
+                if (user.LastGoalReachedDate != null && user.LastGoalReachedDate.Value.Date < today.AddDays(-1))
+                {
+                    // They missed yesterday
+                    user.CurrentStreak = 0;
+                    await _context.SaveChangesAsync();
+                }
+            }
+
+            return Ok(new { StreakUpdated = false, CurrentStreak = user.CurrentStreak, TotalPoints = user.Points });
         }
     }
 }
