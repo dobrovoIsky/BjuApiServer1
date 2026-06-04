@@ -48,7 +48,8 @@ namespace BjuApiServer.Controllers
                 Gender = user.Gender,
                 Theme = user.Theme,
                 Language = user.Language,
-                Points = user.Points,
+                Balance = user.Balance,
+                MonthlyPoints = user.MonthlyPoints,
                 CurrentStreak = user.CurrentStreak
             };
             return Ok(userProfile);
@@ -87,7 +88,8 @@ namespace BjuApiServer.Controllers
                 Gender = user.Gender,
                 Theme = user.Theme,
                 Language = user.Language,
-                Points = user.Points,
+                Balance = user.Balance,
+                MonthlyPoints = user.MonthlyPoints,
                 CurrentStreak = user.CurrentStreak
             };
             return Ok(userProfile);
@@ -126,14 +128,14 @@ namespace BjuApiServer.Controllers
         public async Task<IActionResult> GetLeaderboard()
         {
             var users = await _context.Users
-                .OrderByDescending(u => u.Points)
+                .OrderByDescending(u => u.MonthlyPoints)
                 .Take(50)
                 .Select(u => new LeaderboardUserDto
                 {
                     Id = u.Id,
                     Username = u.Username,
                     AvatarId = u.AvatarId,
-                    Points = u.Points,
+                    Points = u.MonthlyPoints,
                     CurrentStreak = u.CurrentStreak
                 })
                 .ToListAsync();
@@ -149,6 +151,13 @@ namespace BjuApiServer.Controllers
 
             var today = DateTime.UtcNow.Date;
             var nextDay = today.AddDays(1);
+
+            // Monthly Reset Check
+            if (user.LastMonthlyReset == null || user.LastMonthlyReset.Value.Month != today.Month || user.LastMonthlyReset.Value.Year != today.Year)
+            {
+                user.MonthlyPoints = 0;
+                user.LastMonthlyReset = today;
+            }
 
             // Get total calories for today
             var totalCaloriesToday = await _context.FoodEntries
@@ -173,10 +182,12 @@ namespace BjuApiServer.Controllers
                     }
                     
                     user.LastGoalReachedDate = today;
-                    user.Points += 10 + (user.CurrentStreak * 2); // points formula based on streak
+                    int pointsEarned = 10 + (user.CurrentStreak * 2); // points formula based on streak
+                    user.Balance += pointsEarned;
+                    user.MonthlyPoints += pointsEarned;
                     await _context.SaveChangesAsync();
 
-                    return Ok(new { StreakUpdated = true, CurrentStreak = user.CurrentStreak, PointsEarned = 10 + (user.CurrentStreak * 2), TotalPoints = user.Points });
+                    return Ok(new { StreakUpdated = true, CurrentStreak = user.CurrentStreak, PointsEarned = pointsEarned, TotalPoints = user.Balance, MonthlyPoints = user.MonthlyPoints });
                 }
             }
             else
@@ -190,7 +201,7 @@ namespace BjuApiServer.Controllers
                 }
             }
 
-            return Ok(new { StreakUpdated = false, CurrentStreak = user.CurrentStreak, TotalPoints = user.Points });
+            return Ok(new { StreakUpdated = false, CurrentStreak = user.CurrentStreak, TotalPoints = user.Balance, MonthlyPoints = user.MonthlyPoints });
         }
     }
 }

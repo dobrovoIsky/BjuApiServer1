@@ -17,7 +17,8 @@ namespace BjuApiServer.DTO
         public string Gender { get; set; } = "male";
         public string Theme { get; set; } = "light";
         public string Language { get; set; } = "uk";
-        public int Points { get; set; }
+        public int Balance { get; set; }
+        public int MonthlyPoints { get; set; }
         public int CurrentStreak { get; set; }
     }
 }

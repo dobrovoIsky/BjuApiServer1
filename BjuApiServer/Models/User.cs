@@ -29,9 +29,11 @@ namespace BjuApiServer.Models
         public string? GoogleId { get; set; }
         public bool IsGoogleUser { get; set; } = false;
 
-        // Ranking and Streaks
-        public int Points { get; set; } = 0;
+        // Ranking and Economy
+        public int Balance { get; set; } = 300;
+        public int MonthlyPoints { get; set; } = 0;
         public int CurrentStreak { get; set; } = 0;
         public DateTime? LastGoalReachedDate { get; set; }
+        public DateTime? LastMonthlyReset { get; set; }
     }
 }

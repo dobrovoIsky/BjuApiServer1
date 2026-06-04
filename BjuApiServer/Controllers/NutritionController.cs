@@ -33,6 +33,11 @@ namespace BjuApiServer.Controllers
             var user = await _context.Users.FindAsync(request.UserId);
             if (user == null) return NotFound("User not found.");
 
+            if (user.Balance < 10)
+            {
+                return BadRequest(new { message = "Недостатньо балів для генерації рецепту." });
+            }
+
             // 1. Рахуємо математику
             var bju = _bjuService.Calculate(user);
 
@@ -105,6 +110,10 @@ namespace BjuApiServer.Controllers
                 };
 
                 _context.MealPlans.Add(newMealPlan);
+                
+                // Знімаємо бали
+                user.Balance -= 10;
+                
                 await _context.SaveChangesAsync();
 
                 // Повертаємо клієнту теж JSON
