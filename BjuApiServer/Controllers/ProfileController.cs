@@ -63,6 +63,11 @@ namespace BjuApiServer.Controllers
             var user = await _context.Users.FindAsync(id);
             if (user == null) return NotFound("User not found.");
 
+            if (!string.IsNullOrWhiteSpace(updateUserDto.Username))
+            {
+                user.Username = updateUserDto.Username;
+            }
+
             user.Height = updateUserDto.Height;
             user.Weight = updateUserDto.Weight;
             user.Age = updateUserDto.Age;
